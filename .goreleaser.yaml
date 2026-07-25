@@ -1,0 +1,68 @@
+version: 2
+
+project_name: ktrai
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: ktrai
+    main: .
+    binary: ktrai
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X github.com/kennytrytek/ktrai/cmd.version={{.Version}}
+
+archives:
+  - id: ktrai
+    builds:
+      - ktrai
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format: tar.gz
+    files:
+      - README.md
+      - LICENSE
+
+checksum:
+  name_template: "checksums.txt"
+
+release:
+  github:
+    owner: kennytrytek
+    name: ktrai
+  name_template: "v{{.Version}}"
+  draft: false
+  prerelease: auto
+
+brews:
+  - name: ktrai
+    repository:
+      owner: kennytrytek
+      name: homebrew-tap
+      branch: main
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    commit_author:
+      name: Kenny Trytek
+      email: kenneth.g.trytek@gmail.com
+    directory: Formula
+    homepage: https://github.com/kennytrytek/ktrai
+    description: >
+      AI agent context scaffolding for software repositories.
+      Installs a .agent/ layout with AGENTS.md, ctags-driven symbol index,
+      and Cursor + Claude rule symlinks.
+    license: MIT
+    dependencies:
+      - name: universal-ctags
+        type: recommended
+    install: |
+      bin.install "ktrai"
+    test: |
+      system "#{bin}/ktrai", "--version"
