@@ -1,37 +1,28 @@
 # Symbol Index
 
-_Generated: 2026-07-25_
+_Generated: 2026-07-31_
+
+## `cmd/align.go`
+
+### `cmd` (package)
+- `alignCmd` (var)
+- `init` (func) `()`
+- `runAlign` (func) `(_ *cobra.Command, args []string)`
+- `resolveRoot` (func) `(args []string)`
+- `fileExists` (func) `(path string)`
+- `wireToolSymlinks` (func) `(root, agentDir, rulesDir, contextDir string)`
+- `migrateExisting` (func) `(root, contextDir, rulesDir string)`
+- `printAlignNextSteps` (func) `(root string)`
+- `defaultAgentsMD` (const)
 
 ## `cmd/gen_symbols.go`
 
 ### `cmd` (package)
 - `genSymbolsCmd` (var)
-- `init` (func) `()`
+- `RegisterGenSymbols` (func) `()`
 - `runGenSymbols` (func) `(_ *cobra.Command, _ []string)`
 - `formatTopLevel` (func) `(s ctags.Symbol)`
 - `formatMember` (func) `(s ctags.Symbol)`
-
-## `cmd/init.go`
-
-### `cmd` (package)
-- `initCmd` (var)
-- `flagLanguage` (var)
-- `init` (func) `()`
-- `runInit` (func) `(_ *cobra.Command, args []string)`
-- `resolveRoot` (func) `(args []string)`
-- `resolveLanguage` (func) `(root, override string)`
-- `fileExists` (func) `(path string)`
-- `generateSymbols` (func) `(root string, lang detect.Language, outPath string)`
-- `findUniversalCtags` (func) `()`
-- `wireToolSymlinks` (func) `(root, agentDir, rulesDir, contextDir string)`
-- `printNextSteps` (func) `(root string)`
-
-## `cmd/restructure.go`
-
-### `cmd` (package)
-- `restructureCmd` (var)
-- `init` (func) `()`
-- `runRestructure` (func) `(_ *cobra.Command, args []string)`
 
 ## `cmd/root.go`
 
@@ -93,6 +84,7 @@ _Generated: 2026-07-25_
 ### `scaffold` (package)
 - `EnsureDir` (func) `(dir string)`
 - `WriteFile` (func) `(path, content string)`
+- `WriteIfNotExists` (func) `(path, content string)`
 - `EnsureSymlink` (func) `(link, target string)`
 - `IsSymlinkInto` (func) `(path, agentDir string)`
 - `MoveToAgent` (func) `(src, destDir string)`

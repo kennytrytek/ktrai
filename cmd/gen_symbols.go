@@ -23,7 +23,9 @@ Typical usage in a Makefile:
 	RunE: runGenSymbols,
 }
 
-func init() {
+// RegisterGenSymbols wires gen-symbols into the root command.
+// Call from main or a dev build tag to enable it.
+func RegisterGenSymbols() {
 	rootCmd.AddCommand(genSymbolsCmd)
 }
 

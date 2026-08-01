@@ -29,6 +29,17 @@ func WriteFile(path, content string) error {
 	return nil
 }
 
+// WriteIfNotExists writes content to path only when the path does not already
+// exist. Parent directories are created as needed.
+func WriteIfNotExists(path, content string) error {
+	if _, err := os.Lstat(path); err == nil {
+		return nil // already exists — leave it untouched
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("lstat %s: %w", path, err)
+	}
+	return WriteFile(path, content)
+}
+
 // EnsureSymlink creates a symlink at link pointing to target.
 // If link already exists and is already a symlink pointing to target, it is left
 // unchanged (idempotent). If link exists but points elsewhere, it is replaced.
@@ -52,7 +63,7 @@ func EnsureSymlink(link, target string) error {
 				return fmt.Errorf("removing stale symlink %s: %w", link, rerr)
 			}
 		} else {
-			return fmt.Errorf("%s exists as a regular file or directory; migrate it first with 'ktrai restructure'", link)
+			return fmt.Errorf("%s exists as a regular file or directory; run 'ktrai init' to migrate it automatically", link)
 		}
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("lstat %s: %w", link, err)

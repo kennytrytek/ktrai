@@ -9,7 +9,6 @@ Symbol index (all signatures): `.agent/context/symbols.md`
 |---|---|
 | `cmd/gen_symbols.go` | TODO: describe the role of this module. |
 | `cmd/init.go` | TODO: describe the role of this module. |
-| `cmd/restructure.go` | TODO: describe the role of this module. |
 | `cmd/root.go` | TODO: describe the role of this module. |
 | `internal/agentsmd/agentsmd.go` | TODO: describe the role of this module. |
 | `internal/ctags/ctags.go` | TODO: describe the role of this module. |
