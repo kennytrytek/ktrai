@@ -1,4 +1,4 @@
-// Package makefile injects gen-context and prep targets into an existing
+// Package makefile injects gen and prep targets into an existing
 // Makefile. All operations are idempotent — targets already present are left
 // unchanged.
 package makefile
@@ -11,24 +11,24 @@ import (
 	"github.com/kennytrytek/ktrai/internal/detect"
 )
 
-const targetMarker = "gen-context:"
+const targetMarker = "gen:"
 
-// genContextTarget returns the gen-context Makefile snippet for the given language.
-func genContextTarget(lang detect.Language) string {
+// genTarget returns the gen Makefile snippet for the given language.
+func genTarget(lang detect.Language) string {
 	srcDir := srcDirFor(lang)
 	langFlag := ""
 	if l := lang.CtagsLanguages(); l != "" {
 		langFlag = fmt.Sprintf(" --languages=%s", l)
 	}
-	return fmt.Sprintf(`gen-context: ## Regenerate AI context index (requires universal-ctags with JSON support)
+	return fmt.Sprintf(`gen: ## Regenerate AI context index (requires universal-ctags with JSON support)
 	@ctags --list-output-formats 2>/dev/null | grep -q json || { echo "ctags found but lacks JSON output support — install universal-ctags (e.g. brew install universal-ctags)"; exit 1; }
 	ctags --output-format=json --fields=+KSZnte%s \
 	  -R %s \
-	  | ktrai gen-symbols > .agent/context/symbols.md
+	  | ktrai gen > .agent/context/symbols.md
 `, langFlag, srcDir)
 }
 
-const prepTarget = `prep: gen-context ## Prepare for a commit (regenerate AI context)
+const prepTarget = `prep: gen ## Prepare for a commit (regenerate AI context)
 `
 
 func srcDirFor(lang detect.Language) string {
@@ -46,7 +46,7 @@ func srcDirFor(lang detect.Language) string {
 	}
 }
 
-// Inject reads the Makefile at path and appends gen-context and prep targets
+// Inject reads the Makefile at path and appends gen and prep targets
 // if they are not already present. Does nothing if path does not exist.
 func Inject(path string, lang detect.Language) error {
 	data, err := os.ReadFile(path)
@@ -67,7 +67,7 @@ func Inject(path string, lang detect.Language) error {
 	if !strings.HasSuffix(content, "\n") {
 		content += "\n"
 	}
-	content += "\n" + genContextTarget(lang)
+	content += "\n" + genTarget(lang)
 
 	if !strings.Contains(content, "prep:") {
 		content += "\n" + prepTarget

@@ -12,18 +12,18 @@ import (
 )
 
 var genSymbolsCmd = &cobra.Command{
-	Use:   "gen-symbols",
+	Use:   "gen",
 	Short: "Convert ctags JSON (stdin) to a Markdown symbol index (stdout)",
 	Long: `Read universal-ctags --output-format=json output from stdin and write
 a structured Markdown symbol index to stdout.
 
 Typical usage in a Makefile:
   ctags --output-format=json --fields=+KSZnte -R ./src \
-    | ktrai gen-symbols > .agent/context/symbols.md`,
+    | ktrai gen > .agent/context/symbols.md`,
 	RunE: runGenSymbols,
 }
 
-// RegisterGenSymbols wires gen-symbols into the root command.
+// RegisterGenSymbols wires gen into the root command.
 // Call from main or a dev build tag to enable it.
 func RegisterGenSymbols() {
 	rootCmd.AddCommand(genSymbolsCmd)

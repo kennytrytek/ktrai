@@ -31,7 +31,7 @@ brew tap kennytrytek/tap
 brew install ktrai
 ```
 
-`universal-ctags` is an optional but recommended dependency. Without it, `ktrai gen-symbols` will not run and a placeholder `symbols.md` is written instead.
+`universal-ctags` is an optional but recommended dependency. Without it, `ktrai gen` will not run and a placeholder `symbols.md` is written instead.
 
 ```sh
 brew install universal-ctags
@@ -59,15 +59,15 @@ ktrai restructure
 ktrai restructure --language typescript
 ```
 
-### `ktrai gen-symbols`
+### `ktrai gen`
 
 Read `universal-ctags --output-format=json` from stdin and write a Markdown symbol table to stdout.
 
 ```sh
-ctags --output-format=json --fields='*' -R . | ktrai gen-symbols > .agent/context/symbols.md
+ctags --output-format=json --fields='*' -R . | ktrai gen > .agent/context/symbols.md
 ```
 
-This is also injected as a `gen-context` Make target when `ktrai init` detects a Makefile.
+This is also injected as a `gen` Make target when `ktrai init` detects a Makefile.
 
 ## Flags
 
@@ -82,7 +82,7 @@ This is also injected as a `gen-context` Make target when `ktrai init` detects a
 .agent/
 ├── context/
 │   ├── AGENTS.md          Repo overview for AI agents (editable — this is your source of truth)
-│   └── symbols.md         Auto-generated symbol index; regenerate with `make gen-context`
+│   └── symbols.md         Auto-generated symbol index; regenerate with `make gen`
 └── rules/
     ├── codebase-map.md    Rule: consult symbols.md before editing unfamiliar code
     └── update-agents-md.md Rule: keep AGENTS.md accurate after significant changes
@@ -93,10 +93,10 @@ This is also injected as a `gen-context` Make target when `ktrai init` detects a
 When `ktrai init` finds a `Makefile` in the repo root it injects two targets (idempotently):
 
 ```make
-gen-context:
-	ctags --output-format=json --fields='*' -R . | ktrai gen-symbols > .agent/context/symbols.md
+gen:
+	ctags --output-format=json --fields='*' -R . | ktrai gen > .agent/context/symbols.md
 
-prep: gen-context
+prep: gen
 ```
 
 ## Development

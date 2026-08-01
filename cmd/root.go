@@ -9,16 +9,15 @@ import (
 
 var rootCmd = &cobra.Command{
 	Use:   "ktrai",
-	Short: "AI agent context scaffolding for software repositories",
-	Long: `ktrai installs a tool-agnostic AI agent context layer into any repository.
+	Short: "AI scaffolding for software repositories",
+	Long: `ktrai is AI scaffolding for software repositories, as desired by KTry.
 
 It manages a .agent/ directory containing:
-  - AGENTS.md        agent-optimised orientation document
-  - symbols.md       ctags-driven symbol index (all function/class signatures)
-  - rules/           always-apply and on-demand rules for Cursor and Claude
+  - AGENTS.md   agent-optimised orientation document
+  - rules/      always-apply and on-demand rules for Cursor and Claude
 
 Subcommands:
-  align  Move and restructure a repository into the AI agent context layout`,
+  align  Set up or migrate a repository into the .agent/ layout`,
 	Version: version,
 }
 
