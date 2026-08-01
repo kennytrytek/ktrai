@@ -8,6 +8,13 @@ description: >
 
 # Creating or Updating AGENTS.md
 
+## Choosing a scenario
+
+Read the existing AGENTS.md (if any) before deciding:
+
+- **Scenario A** — file exists AND has substantive content: real module descriptions, a genuine purpose sentence, and conventions that reflect the actual codebase. A few stale rows do not disqualify it.
+- **Scenario B** — no file exists, OR the file is a stub or severely outdated: the majority of module roles are TODO placeholders, the purpose is a TODO, or the descriptions are so vague or wrong that they would mislead an agent. Treat as Scenario B and rebuild from source. Before writing, note any rows or bullets in the existing file that contain real information — carry those forward verbatim into the new document.
+
 ## Scenario A — Updating an existing AGENTS.md
 
 **When to run:** only after complex updates, major new features, or significant refactors. Very small or localized code changes do not warrant an update.
@@ -16,12 +23,15 @@ description: >
 2. Read the current AGENTS.md in full — stop at `## Notes` and do not read past it.
 3. For each changed module, read the source file and any associated docs (README sections, ADRs, changelogs) to verify the existing description is still accurate.
 4. Update only the affected table row or bullet; preserve everything else that remains accurate.
-5. Do not touch the `## Notes` section.
-6. Do not expand AGENTS.md beyond its current scope. If in doubt, leave it out.
+5. Refresh the `## Hot Spots`, `## Coupling Clusters`, and `## Stabilized Core` sections if any are absent, or if this update covers a major refactor or more than ~3 months of changes: re-run the corresponding git commands from Scenario B Step 1 and replace the table rows.
+6. Do not touch the `## Notes` section.
+7. Do not expand AGENTS.md beyond its current scope. If in doubt, leave it out.
 
-## Scenario B — Creating a new AGENTS.md (none exists)
+## Scenario B — Creating or rebuilding AGENTS.md
 
-**Step 1 — gather git history** across three time slices to identify hotspots:
+**Step 1 — gather git history.** Run all three analyses. The results will be written directly into the document in Step 5 as hard-to-compute insights agents can reference without re-running git.
+
+**1a — Hot spots** (frequently changed paths):
 ```sh
 # Recent (last 12 months)
 git log --since="1 year ago" --name-only --pretty=format: | sort | uniq -c | sort -rn | head -20
@@ -32,10 +42,45 @@ git log --before="1 year ago" --since="3 years ago" --name-only --pretty=format:
 # Foundational (inception to 3 years ago)
 git log --before="3 years ago" --name-only --pretty=format: | sort | uniq -c | sort -rn | head -20
 ```
+Files appearing frequently in recent history → active hotspots; read and describe these first.
+Files present since early commits and still present today → foundational.
 
-Interpret results:
-- Files appearing frequently in recent history → active hotspots; read and describe these first.
-- Files present since early commits and still present today → foundational; describe their role if non-obvious.
+**1b — Coupling clusters** (files that change together):
+```sh
+git log --name-only --pretty=format:"---" | awk '
+/^---$/{
+  if(n>1) for(i=1;i<=n;i++) for(j=i+1;j<=n;j++) print files[i]" "files[j];
+  n=0; next
+}
+NF{ files[++n]=$0 }
+' | sort | uniq -c | sort -rn | head -15
+```
+Filter pairs where both files are source files (exclude lock files, generated files, `.agent/` meta-files). A pair with 2+ co-commits is meaningful on repos up to ~6 months old; use 3+ for older repos.
+
+**1c — Stabilized core** (battle-tested paths with no recent churn):
+```sh
+# Adjust the cutoff based on project age:
+#   < 3 months old  → use --before="2 weeks ago" / --since="2 weeks ago"
+#   3–12 months old → use --before="3 months ago" / --since="3 months ago"
+#   > 12 months old → use --before="1 year ago"  / --since="1 year ago"
+comm -23 \
+  <(git log --before="<CUTOFF>" --name-only --pretty=format: | grep -v '^$' | sort -u) \
+  <(git log --since="<CUTOFF>"  --name-only --pretty=format: | grep -v '^$' | sort -u)
+```
+Files in the output have a commit history but have not been touched recently. These are battle-tested; agents should change them with extra care. Omit this section if the repo is too young (no files qualify).
+
+**Tier-aware presentation** — count source files to choose the right level of detail for all three sections:
+```sh
+# Go
+find . -name "*.go" -not -path "*/vendor/*" | wc -l
+# JS/TS: *.ts *.tsx *.js  Python: *.py  etc.
+```
+| Count | Present entries as |
+|---|---|
+| < 15 (Nano) | Individual file paths |
+| 15 – 100 (Small) | Individual file paths |
+| 100 – 500 (Medium) | Directory paths (`internal/auth/`) |
+| 500+ (Large) | Architectural domains; omit granular tables if signal is too diffuse |
 
 **Step 2 — read all documentation.**
 Read top-level and subdirectory READMEs, any ADRs (`docs/adr/`, `doc/decisions/`, or similar), changelogs, and any developer guides (`CONTRIBUTING.md`, `DEVELOPMENT.md`, `docs/` tree). These often reveal purpose, architecture decisions, and conventions that are not visible from source code alone.
@@ -60,6 +105,22 @@ Only include a convention if you can verify it from the repo — never invent pl
 | File | Role |
 |---|---|
 | `path/to/module` | One-line description of what this module does. |
+
+## Hot Spots
+Frequently changed files (last 12 months) — high-churn paths; understand these deeply before editing:
+| Commits | File |
+|---|---|
+| N | `path/to/file` |
+
+## Coupling Clusters
+Files that frequently change together — touching one likely requires touching the other:
+| Co-commits | Pair |
+|---|---|
+| N | `fileA` ↔ `fileB` |
+
+## Stabilized Core
+Paths with substantial history but no recent changes — battle-tested; change with extra care:
+- `path/to/stable/file`
 
 ## Conventions
 - <verified naming / style / error-handling rule>

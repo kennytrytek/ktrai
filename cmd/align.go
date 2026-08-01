@@ -21,7 +21,7 @@ files are only moved to their canonical location.
   - .agent/context/, .agent/rules/, and .agent/skills/ are created if absent.
   - AGENTS.md, CLAUDE.md, .cursor/rules/, and .claude/rules/ are migrated
     into .agent/ and replaced with symlinks when they exist as real files.
-  - Skills from .skills/, .claude/skills/, and .cursor/skills/ are migrated
+  - Skills from .claude/skills/ and .cursor/skills/ are migrated
     into .agent/skills/ and replaced with symlinks. Duplicate skill names
     across sources cause an error — resolve manually before re-running.
   - Configurations for unsupported AI tools are removed
@@ -86,6 +86,24 @@ func runAlign(_ *cobra.Command, args []string) error {
 	); err != nil {
 		return err
 	}
+	if err := scaffold.WriteIfNotExists(
+		filepath.Join(rulesDir, "update-ci-review.md"),
+		scaffold.UpdateCiReviewRule,
+	); err != nil {
+		return err
+	}
+	if err := scaffold.WriteIfNotExists(
+		filepath.Join(skillsDir, "ci-review", "SKILL.md"),
+		scaffold.CiReviewSkill,
+	); err != nil {
+		return err
+	}
+	if err := scaffold.WriteIfNotExists(
+		filepath.Join(skillsDir, "update-ci-review", "SKILL.md"),
+		scaffold.UpdateCiReviewSkill,
+	); err != nil {
+		return err
+	}
 	fmt.Println("→ created any missing context, rule, and skill files")
 
 	if err := wireToolSymlinks(root, agentDir, rulesDir, contextDir, skillsDir); err != nil {
@@ -142,10 +160,6 @@ func wireToolSymlinks(root, agentDir, rulesDir, contextDir, skillsDir string) er
 	if err != nil {
 		return err
 	}
-	relSkillsFromRoot, err := filepath.Rel(root, skillsDir)
-	if err != nil {
-		return err
-	}
 
 	type link struct {
 		linkPath string
@@ -158,7 +172,6 @@ func wireToolSymlinks(root, agentDir, rulesDir, contextDir, skillsDir string) er
 		{filepath.Join(root, ".claude", "rules"), relRulesClaude},
 		{filepath.Join(root, ".claude", "skills"), relSkillsClaude},
 		{filepath.Join(root, "CLAUDE.md"), relContextFromRoot},
-		{filepath.Join(root, ".skills"), relSkillsFromRoot},
 	}
 
 	for _, l := range links {
@@ -191,15 +204,14 @@ func migrateExisting(root, contextDir, rulesDir, skillsDir string) error {
 		}
 	}
 
-	// Migrate skills from all three source locations in priority order.
-	// .skills/ is the tool-agnostic canonical source; .claude/skills/ second;
-	// .cursor/skills/ third. Duplicate skill names cause an error.
+	// Migrate skills from tool-specific locations into .agent/skills/.
+	// .claude/skills/ takes priority over .cursor/skills/. Duplicate skill
+	// names across sources cause an error.
 	type skillSource struct {
 		dir  string
 		name string // human-readable label for error messages
 	}
 	sources := []skillSource{
-		{filepath.Join(root, ".skills"), ".skills/"},
 		{filepath.Join(root, ".claude", "skills"), ".claude/skills/"},
 		{filepath.Join(root, ".cursor", "skills"), ".cursor/skills/"},
 	}
@@ -319,7 +331,7 @@ func printAlignNextSteps(_ string) {
 	fmt.Println("  1. Edit .agent/context/AGENTS.md — fill in purpose and module roles.")
 	fmt.Println("  2. Add skills to .agent/skills/ — each skill is a directory with a SKILL.md.")
 	fmt.Println("  3. Commit .agent/ and the symlinks (AGENTS.md, CLAUDE.md,")
-	fmt.Println("     .cursor/rules, .cursor/skills, .claude/rules, .claude/skills, .skills).")
+	fmt.Println("     .cursor/rules, .cursor/skills, .claude/rules, .claude/skills).")
 }
 
 const defaultAgentsMD = `# Project — agent context
