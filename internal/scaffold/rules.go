@@ -11,22 +11,22 @@ Before exploring source files, read ` + "`AGENTS.md`" + `.
 Only read individual source files when that is insufficient for the task.
 `
 
-// UpdateAgentsMdRule is the manually-invoked rule codifying how to create or update AGENTS.md.
+// UpdateAgentsMdRule is the always-available rule that tells agents when to
+// invoke the update-agents-md skill and what AGENTS.md should contain.
 const UpdateAgentsMdRule = `---
 description: >
-  Invoke after any change with lasting effects on how developers or agents work in this repo:
-  new or removed modules, changed formatter / linter / test commands, new external dependencies
-  or services, Python virtualenv or toolchain migrations, architectural restructuring, or CI
-  workflow changes. Do NOT invoke for routine bug fixes, small refactors, or localized changes
+  Invoke the update-agents-md skill after any change with lasting effects on
+  how developers or agents work in this repo: new or removed modules, changed
+  formatter / linter / test commands, new external dependencies or services,
+  toolchain migrations, architectural restructuring, or CI workflow changes.
+  Do NOT invoke for routine bug fixes, small refactors, or localized changes
   that leave the repo's tools and structure intact.
 alwaysApply: false
 ---
 
-# Creating or Updating AGENTS.md
+# When to update AGENTS.md
 
-## When to invoke this rule
-
-**Do invoke** after any of these:
+**Do invoke the ` + "`update-agents-md`" + ` skill** after any of these:
 - A new module, package, or service is added or removed
 - The formatter, linter, test runner, or build command changes
 - A toolchain or runtime migration (e.g. Python virtualenv strategy, Node version, Go toolchain)
@@ -56,7 +56,23 @@ Only high-level context an agent cannot easily infer by reading individual sourc
 Every AGENTS.md ends with a ` + "`## Notes`" + ` section reserved for human annotation. Agents must:
 - Never modify, reformat, truncate, or read this section for guidance.
 - Skip past it entirely when updating.
-- Emit it as an empty stub when creating a new file (see template below).
+- Emit it as an empty stub when creating a new file.
+
+To execute an update or creation, invoke the ` + "`update-agents-md`" + ` skill.
+`
+
+// UpdateAgentsMdSkill contains the imperative steps for creating or updating
+// AGENTS.md. It is written as a skill so it can be invoked both automatically
+// (when the rule fires) and manually by a human.
+const UpdateAgentsMdSkill = `---
+name: update-agents-md
+description: >
+  Create or update AGENTS.md for this repository. Invoke when the
+  update-agents-md rule fires, or manually when you want to refresh the agent
+  context document.
+---
+
+# Creating or Updating AGENTS.md
 
 ## Scenario A — Updating an existing AGENTS.md
 

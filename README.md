@@ -10,15 +10,21 @@ your-repo/
 │   ├── context/
 │   │   ├── AGENTS.md            ← repo overview, conventions, module map (edit this)
 │   │   └── symbols.md           ← ctags-generated symbol index
-│   └── rules/
-│       └── update-agents-md.md  ← instructs agents when and how to keep AGENTS.md current
+│   ├── rules/
+│   │   └── update-agents-md.md  ← instructs agents when and how to keep AGENTS.md current
+│   └── skills/                  ← on-demand agent procedure library (add SKILL.md files here)
+│       └── <skill-name>/
+│           └── SKILL.md
 │
 ├── AGENTS.md                    → symlink → .agent/context/AGENTS.md
 ├── CLAUDE.md                    → symlink → .agent/context/AGENTS.md
+├── .skills                      → symlink → .agent/skills
 ├── .cursor/
-│   └── rules                    → symlink → ../.agent/rules
+│   ├── rules                    → symlink → ../.agent/rules
+│   └── skills                   → symlink → ../.agent/skills
 └── .claude/
-    └── rules                    → symlink → ../.agent/rules
+    ├── rules                    → symlink → ../.agent/rules
+    └── skills                   → symlink → ../.agent/skills
 ```
 
 All symlinks use relative paths for portability across machines. Every operation is idempotent — re-running `ktrai align` on an already-aligned repo is safe.
@@ -43,13 +49,27 @@ ktrai align ~/work/my-repo
 
 What `align` does:
 
-1. Creates `.agent/context/` and `.agent/rules/` if absent.
-2. Migrates any real (non-symlink) `AGENTS.md`, `CLAUDE.md`, `.cursor/rules/`, and `.claude/rules/` files and directories into `.agent/`, replacing them with symlinks.
-3. Creates a skeleton `AGENTS.md` under `.agent/context/` if none exists.
-4. Drops the `update-agents-md` rule into `.agent/rules/` if absent.
-5. Ensures `AGENTS.md`, `CLAUDE.md`, `.cursor/rules`, and `.claude/rules` are symlinks pointing into `.agent/`.
+1. Creates `.agent/context/`, `.agent/rules/`, and `.agent/skills/` if absent.
+2. Migrates any real (non-symlink) `AGENTS.md`, `CLAUDE.md`, `.cursor/rules/`, and `.claude/rules/` into `.agent/`, replacing them with symlinks.
+3. Migrates skill subdirectories from `.skills/`, `.claude/skills/`, and `.cursor/skills/` into `.agent/skills/`, replacing each source with a symlink. Duplicate skill names across sources cause an error — rename or merge the conflicting skills and re-run.
+4. Removes configuration files for unsupported AI tools (e.g. `.github/copilot-instructions.md`).
+5. Creates a skeleton `AGENTS.md` under `.agent/context/` if none exists.
+6. Drops the `update-agents-md` rule into `.agent/rules/` if absent.
+7. Ensures `AGENTS.md`, `CLAUDE.md`, `.cursor/rules`, `.cursor/skills`, `.claude/rules`, `.claude/skills`, and `.skills` are symlinks pointing into `.agent/`.
 
-After running `align`, open `.agent/context/AGENTS.md` and fill it in — the skeleton has TODOs for the project purpose, module descriptions, conventions, and commit pre-flight commands. See the `update-agents-md` rule in `.agent/rules/` for detailed instructions.
+After running `align`:
+- Open `.agent/context/AGENTS.md` and fill it in — the skeleton has TODOs for the project purpose, module descriptions, conventions, and commit pre-flight commands.
+- Add shared skills to `.agent/skills/` — each skill is a subdirectory containing a `SKILL.md`.
+
+See the `update-agents-md` rule in `.agent/rules/` for detailed instructions on keeping `AGENTS.md` current.
+
+### Skills vs rules vs commands
+
+| Concept | Location | Description |
+|---|---|---|
+| **Rules** | `.agent/rules/` | Always-on context injected into the agent automatically (conventions, style, commit steps) |
+| **Skills** | `.agent/skills/` | On-demand procedures the agent follows when explicitly invoked (e.g. `ci-review`, `deploy-service`) |
+| **Commands** | `.cursor/commands/` | Cursor-only slash commands — not managed by ktrai; no Claude Code equivalent |
 
 
 ## Makefile targets

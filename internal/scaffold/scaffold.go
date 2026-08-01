@@ -166,6 +166,71 @@ func MoveToAgent(src, destDir string) error {
 	return EnsureSymlink(src, rel)
 }
 
+// MigrateSkillsDir migrates each top-level skill subdirectory from srcDir into
+// agentSkillsDir, using MoveToAgent for each entry. It is a no-op when srcDir
+// does not exist or is already a symlink (the caller's wireToolSymlinks will
+// re-point it). It returns the list of skill names that were actually moved so
+// the caller can detect collisions before invoking this function.
+//
+// Entries inside srcDir that are symlinks whose resolved target is already
+// inside agentSkillsDir are skipped — they are already managed.
+func MigrateSkillsDir(srcDir, agentSkillsDir string) ([]string, error) {
+	info, err := os.Lstat(srcDir)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("lstat %s: %w", srcDir, err)
+	}
+	// Already a symlink — wireToolSymlinks will update it; nothing to migrate.
+	if info.Mode()&os.ModeSymlink != 0 {
+		return nil, nil
+	}
+	if !info.IsDir() {
+		return nil, fmt.Errorf("%s exists but is not a directory", srcDir)
+	}
+
+	entries, err := os.ReadDir(srcDir)
+	if err != nil {
+		return nil, fmt.Errorf("reading %s: %w", srcDir, err)
+	}
+
+	agentAbs, err := filepath.Abs(agentSkillsDir)
+	if err != nil {
+		return nil, err
+	}
+
+	var migrated []string
+	for _, e := range entries {
+		entryPath := filepath.Join(srcDir, e.Name())
+
+		// If it's a symlink that already resolves into agentSkillsDir, skip.
+		if e.Type()&os.ModeSymlink != 0 {
+			target, rerr := os.Readlink(entryPath)
+			if rerr == nil {
+				if !filepath.IsAbs(target) {
+					target = filepath.Join(filepath.Dir(entryPath), target)
+				}
+				targetAbs, aerr := filepath.Abs(target)
+				if aerr == nil {
+					rel, rerr2 := filepath.Rel(agentAbs, targetAbs)
+					if rerr2 == nil && (rel == "." || (len(rel) >= 2 && rel[:2] != "..")) {
+						continue // already points into .agent/skills/
+					}
+				}
+			}
+			// Symlink to somewhere else — skip; we cannot safely move it.
+			continue
+		}
+
+		if err := MoveToAgent(entryPath, agentSkillsDir); err != nil {
+			return migrated, fmt.Errorf("migrating skill %s: %w", e.Name(), err)
+		}
+		migrated = append(migrated, e.Name())
+	}
+	return migrated, nil
+}
+
 // copyDir recursively copies src directory to dst.
 func copyDir(src, dst string) error {
 	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {

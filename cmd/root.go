@@ -14,7 +14,8 @@ var rootCmd = &cobra.Command{
 
 It manages a .agent/ directory containing:
   - AGENTS.md   agent-optimised orientation document
-  - rules/      always-apply and on-demand rules for Cursor and Claude
+  - rules/      always-on context rules for Cursor and Claude
+  - skills/     on-demand agent procedures shared across Cursor and Claude
 
 Subcommands:
   align  Set up or migrate a repository into the .agent/ layout`,
