@@ -1,0 +1,43 @@
+name: AI Code Review (Scheduled Catch-up)
+
+# Backstop for PRs that slipped through the event-driven workflow —
+# e.g. PRs opened while GHA was down, or that hit GitHub's search index lag.
+# Runs hourly and reviews any open PR that hasn't received an AI review yet.
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # top of every hour
+  workflow_dispatch:       # allow manual trigger for testing or catch-up
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  scheduled-review:
+    uses: Workiva/gha-ai-code-review/.github/workflows/ai-code-review-scheduled.yml@0.1.80
+    secrets: inherit
+    with:
+      file-patterns: |
+        *.go
+        *.yaml
+        *.yml
+        *.md
+        *.sh
+      excluded-patterns: |
+        go.sum
+        **/go.sum
+        **/vendor/**
+        **/testdata/**
+      # skill-mappings routes changed files to the appropriate review skill.
+      # The catch-all "**" sends every PR to the ci-review skill, which lives
+      # at .agent/skills/ci-review/SKILL.md (symlinked from .claude/skills/).
+      # Add path-specific entries above "**" to use a different skill for
+      # certain file patterns, e.g.:
+      #   packages/migrations/** -> .claude/skills/migrations/SKILL.md
+      skill-mappings: |
+        ** -> .claude/skills/ci-review/SKILL.md
+      # Optional overrides (defaults shown):
+      # max-reviews: 20    # circuit breaker — max PRs to review per run
+      # max-parallel: 2    # review this many PRs concurrently

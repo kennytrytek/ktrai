@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/kennytrytek/ktrai/internal/detect"
 	"github.com/kennytrytek/ktrai/internal/scaffold"
 	"github.com/spf13/cobra"
 )
@@ -104,7 +105,24 @@ func runAlign(_ *cobra.Command, args []string) error {
 	); err != nil {
 		return err
 	}
-	fmt.Println("→ created any missing context, rule, and skill files")
+	lang := detect.Detect(root)
+	filePatterns := lang.ReviewFilePatterns()
+	excludedPatterns := lang.ReviewExcludedPatterns()
+	githubWorkflowsDir := filepath.Join(root, ".github", "workflows")
+	if err := scaffold.WriteIfNotExists(
+		filepath.Join(githubWorkflowsDir, "ai-review.yml"),
+		scaffold.AiReviewWorkflow(filePatterns, excludedPatterns),
+	); err != nil {
+		return err
+	}
+	if err := scaffold.WriteIfNotExists(
+		filepath.Join(githubWorkflowsDir, "ai-review-scheduled.yml"),
+		scaffold.AiReviewScheduledWorkflow(filePatterns, excludedPatterns),
+	); err != nil {
+		return err
+	}
+	fmt.Printf("→ detected language: %s\n", lang)
+	fmt.Println("→ created any missing context, rule, skill, and workflow files")
 
 	if err := wireToolSymlinks(root, agentDir, rulesDir, contextDir, skillsDir); err != nil {
 		return err
@@ -330,7 +348,9 @@ func printAlignNextSteps(_ string) {
 	fmt.Println("\nNext steps:")
 	fmt.Println("  1. Edit .agent/context/AGENTS.md — fill in purpose and module roles.")
 	fmt.Println("  2. Add skills to .agent/skills/ — each skill is a directory with a SKILL.md.")
-	fmt.Println("  3. Commit .agent/ and the symlinks (AGENTS.md, CLAUDE.md,")
+	fmt.Println("  3. Review .github/workflows/ai-review.yml and ai-review-scheduled.yml —")
+	fmt.Println("     update file-patterns and the reusable workflow version pin as needed.")
+	fmt.Println("  4. Commit .agent/, .github/workflows/, and the symlinks (AGENTS.md, CLAUDE.md,")
 	fmt.Println("     .cursor/rules, .cursor/skills, .claude/rules, .claude/skills).")
 }
 

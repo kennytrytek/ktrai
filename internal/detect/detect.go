@@ -78,6 +78,40 @@ func Detect(root string) Language {
 	return Unknown
 }
 
+// ReviewFilePatterns returns newline-separated glob patterns for files that
+// should be included in an AI code review workflow for this language.
+func (l Language) ReviewFilePatterns() string {
+	switch l {
+	case Go:
+		return "*.go\n*.yaml\n*.yml\n*.md\n*.sh"
+	case Python:
+		return "*.py\n*.yaml\n*.yml\n*.md\n*.sh\n*.toml\n*.cfg\n*.ini"
+	case TypeScript:
+		return "*.ts\n*.tsx\n*.js\n*.jsx\n*.yaml\n*.yml\n*.md\n*.sh\n*.json"
+	case Java:
+		return "*.java\n*.kt\n*.yaml\n*.yml\n*.md\n*.sh\n*.xml\n*.gradle\n*.gradle.kts"
+	default:
+		return "*.go\n*.py\n*.ts\n*.tsx\n*.js\n*.java\n*.kt\n*.yaml\n*.yml\n*.md\n*.sh"
+	}
+}
+
+// ReviewExcludedPatterns returns newline-separated glob patterns for files
+// that should be excluded from an AI code review workflow for this language.
+func (l Language) ReviewExcludedPatterns() string {
+	switch l {
+	case Go:
+		return "go.sum\n**/go.sum\n**/vendor/**\n**/testdata/**"
+	case Python:
+		return "**/__pycache__/**\n**/.venv/**\n**/venv/**\n**/*.pyc\n**/dist/**\n**/build/**"
+	case TypeScript:
+		return "**/node_modules/**\n**/dist/**\n**/build/**\n**/*.min.js\n**/*.generated.*\npackage-lock.json\nyarn.lock"
+	case Java:
+		return "**/build/**\n**/target/**\n**/*.class"
+	default:
+		return "**/vendor/**\n**/node_modules/**\n**/__pycache__/**\n**/dist/**\n**/build/**\n**/target/**"
+	}
+}
+
 func fileExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
