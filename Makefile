@@ -11,5 +11,12 @@ help: ## Show available targets
 
 gen: .agent/context/symbols.md ## Regenerate AI context index
 
-.PHONY: help gen prep
+build: ## Build ktrai binary to ./bin/ktrai
+	@mkdir -p bin
+	go build -ldflags "-X github.com/kennytrytek/ktrai/cmd.version=$(shell git describe --tags --always --dirty 2>/dev/null || echo dev)" -o bin/ktrai .
+
+run: build ## Build and run ktrai align against this repo
+	./bin/ktrai align .
+
+.PHONY: help gen prep build run
 prep: gen ## Prepare for a commit (regenerate AI context)

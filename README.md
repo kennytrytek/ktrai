@@ -1,6 +1,6 @@
 # ktrai
 
-`ktrai` installs a tool-agnostic AI agent context layer into any Go, Python, TypeScript, or Java/Kotlin repository. It creates a canonical `.agent/` directory that Cursor, Claude, and other AI coding tools share — no more duplicated rule files, no more per-tool config sprawl.
+`ktrai` installs a tool-agnostic AI agent context layer into any software repository. It creates a canonical `.agent/` directory that Cursor, Claude, and other AI coding tools share — no more duplicated rule files, no more per-tool config sprawl.
 
 ## What ktrai creates
 
@@ -8,21 +8,20 @@
 your-repo/
 ├── .agent/
 │   ├── context/
-│   │   ├── AGENTS.md        ← repo overview, conventions, module map
-│   │   └── symbols.md       ← ctags-generated symbol index (if universal-ctags is installed)
+│   │   ├── AGENTS.md            ← repo overview, conventions, module map (edit this)
+│   │   └── symbols.md           ← ctags-generated symbol index
 │   └── rules/
-│       ├── codebase-map.md  ← instructs agents to read the symbol index
-│       └── update-agents-md.md ← instructs agents to keep AGENTS.md current
+│       └── update-agents-md.md  ← instructs agents when and how to keep AGENTS.md current
 │
-├── AGENTS.md                → symlink → .agent/context/AGENTS.md
-├── CLAUDE.md                → symlink → .agent/context/AGENTS.md
+├── AGENTS.md                    → symlink → .agent/context/AGENTS.md
+├── CLAUDE.md                    → symlink → .agent/context/AGENTS.md
 ├── .cursor/
-│   └── rules                → symlink → ../.agent/rules
+│   └── rules                    → symlink → ../.agent/rules
 └── .claude/
-    └── rules                → symlink → ../.agent/rules
+    └── rules                    → symlink → ../.agent/rules
 ```
 
-All symlinks use relative paths for portability across machines. Every operation is idempotent — re-running `ktrai init` on an already-initialized repo is safe.
+All symlinks use relative paths for portability across machines. Every operation is idempotent — re-running `ktrai align` on an already-aligned repo is safe.
 
 ## Install
 
@@ -31,102 +30,64 @@ brew tap kennytrytek/tap
 brew install ktrai
 ```
 
-`universal-ctags` is an optional but recommended dependency. Without it, `ktrai gen` will not run and a placeholder `symbols.md` is written instead.
-
-```sh
-brew install universal-ctags
-```
-
 ## Usage
 
-### `ktrai init`
+### `ktrai align [directory]`
 
-Scaffold the full `.agent/` context layer in the current directory.
-
-```sh
-ktrai init
-ktrai init --language go      # override language detection
-```
-
-Detection reads `go.mod`, `pyproject.toml` / `requirements.txt`, `package.json`, and `build.gradle` / `settings.gradle` in that order.
-
-### `ktrai restructure`
-
-Migrate existing `AGENTS.md`, `CLAUDE.md`, `.cursor/rules/`, and `.claude/rules/` into `.agent/`, then run `init` for anything still missing.
+Set up or migrate a repository into the `.agent/` layout. If `directory` is omitted, the current working directory is used.
 
 ```sh
-ktrai restructure
-ktrai restructure --language typescript
+ktrai align          # align the current directory
+ktrai align ~/work/my-repo
 ```
 
-### `ktrai gen`
+What `align` does:
 
-Read `universal-ctags --output-format=json` from stdin and write a Markdown symbol table to stdout.
+1. Creates `.agent/context/` and `.agent/rules/` if absent.
+2. Migrates any real (non-symlink) `AGENTS.md`, `CLAUDE.md`, `.cursor/rules/`, and `.claude/rules/` files and directories into `.agent/`, replacing them with symlinks.
+3. Creates a skeleton `AGENTS.md` under `.agent/context/` if none exists.
+4. Drops the `update-agents-md` rule into `.agent/rules/` if absent.
+5. Ensures `AGENTS.md`, `CLAUDE.md`, `.cursor/rules`, and `.claude/rules` are symlinks pointing into `.agent/`.
 
-```sh
-ctags --output-format=json --fields='*' -R . | ktrai gen > .agent/context/symbols.md
-```
+After running `align`, open `.agent/context/AGENTS.md` and fill it in — the skeleton has TODOs for the project purpose, module descriptions, conventions, and commit pre-flight commands. See the `update-agents-md` rule in `.agent/rules/` for detailed instructions.
 
-This is also injected as a `gen` Make target when `ktrai init` detects a Makefile.
 
-## Flags
+## Makefile targets
 
-| Flag | Default | Description |
-|---|---|---|
-| `--language` | auto-detected | Force a specific language (`go`, `python`, `typescript`, `java`) |
-| `--version` | — | Print version and exit |
-
-## Directory layout (detail)
-
-```
-.agent/
-├── context/
-│   ├── AGENTS.md          Repo overview for AI agents (editable — this is your source of truth)
-│   └── symbols.md         Auto-generated symbol index; regenerate with `make gen`
-└── rules/
-    ├── codebase-map.md    Rule: consult symbols.md before editing unfamiliar code
-    └── update-agents-md.md Rule: keep AGENTS.md accurate after significant changes
-```
-
-## Makefile integration
-
-When `ktrai init` finds a `Makefile` in the repo root it injects two targets (idempotently):
-
-```make
-gen:
-	ctags --output-format=json --fields='*' -R . | ktrai gen > .agent/context/symbols.md
-
-prep: gen
-```
+| Target | Description |
+|---|---|
+| `make build` | Compile `./bin/ktrai` with the current git version baked in |
+| `make run` | Build and run `ktrai align` against this repo |
 
 ## Development
+
+Requires **Go 1.24+**.
 
 ```sh
 git clone git@github.com:kennytrytek/ktrai.git
 cd ktrai
-go build ./...
-go test ./...
-go vet ./...
+make build          # compile to ./bin/ktrai
+go vet ./...        # must pass before committing
+go build ./...      # must compile cleanly
 ```
 
-Requires **Go 1.24+**.
+CI (GitHub Actions) runs `go build ./...`, `go vet ./...`, and `go test ./...` on every push and pull request to `main`.
 
 ## Release
 
-Releases are fully automated via [GoReleaser](https://goreleaser.com/) and GitHub Actions.
+Releases are automated via [GoReleaser](https://goreleaser.com/) and GitHub Actions. Cross-platform binaries (macOS and Linux, amd64 and arm64) are built and attached to the GitHub release; the Homebrew formula in `kennytrytek/homebrew-tap` is updated automatically.
 
-1. Ensure the following secrets are set on the `kennytrytek/ktrai` GitHub repo:
-   - `GITHUB_TOKEN` — provided automatically by Actions
-   - `HOMEBREW_TAP_TOKEN` — a GitHub PAT with `repo` scope on `kennytrytek/homebrew-tap`
+Required repository secrets:
 
-2. Tag and push:
+- `GITHUB_TOKEN` — provided automatically by Actions
+- `HOMEBREW_TAP_TOKEN` — a GitHub PAT with `repo` scope on `kennytrytek/homebrew-tap`
+
+To cut a release:
 
 ```sh
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.2.0
+git push origin v0.2.0
 ```
-
-The release workflow builds cross-platform binaries, creates a GitHub release, and updates the Homebrew formula in `kennytrytek/homebrew-tap` automatically.
 
 ## License
 

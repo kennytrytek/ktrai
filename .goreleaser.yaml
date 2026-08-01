@@ -59,9 +59,6 @@ brews:
       Installs a .agent/ layout with AGENTS.md, ctags-driven symbol index,
       and Cursor + Claude rule symlinks.
     license: MIT
-    dependencies:
-      - name: universal-ctags
-        type: recommended
     install: |
       bin.install "ktrai"
     test: |
