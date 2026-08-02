@@ -5,8 +5,9 @@ name: AI Code Review (Scheduled Catch-up)
 # Runs hourly and reviews any open PR that hasn't received an AI review yet.
 
 on:
-  schedule:
-    - cron: '0 * * * *'  # top of every hour
+  # Commented out because I don't actually want to run a scheduled cron on this repo.
+  # schedule:
+  #   - cron: '0 * * * *'  # top of every hour
   workflow_dispatch:       # allow manual trigger for testing or catch-up
 
 permissions:
