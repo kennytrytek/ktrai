@@ -56,9 +56,7 @@ func Draft(root string, lang detect.Language) *Content {
 		Conventions: []string{
 			"TODO: add project-specific coding conventions here.",
 		},
-		DoNotEdit: []string{
-			".agent/context/symbols.md",
-		},
+		DoNotEdit: []string{},
 	}
 }
 
@@ -68,7 +66,6 @@ func Render(c *Content) string {
 
 	sb.WriteString(fmt.Sprintf("# %s — agent context\n\n", c.ProjectName))
 	sb.WriteString(c.Purpose + "\n\n")
-	sb.WriteString("Symbol index (all signatures): `.agent/context/symbols.md`\n\n")
 
 	if len(c.Modules) > 0 {
 		sb.WriteString("## Modules\n")
@@ -136,8 +133,7 @@ func parse(raw, defaultProjectName string) *Content {
 
 		// Purpose line: the first non-empty, non-heading line after H1
 		// (before the first H2).
-		if c.Purpose == "" && !strings.HasPrefix(trimmed, "#") && trimmed != "" &&
-			!strings.HasPrefix(trimmed, "Symbol index") {
+		if c.Purpose == "" && !strings.HasPrefix(trimmed, "#") && trimmed != "" {
 			c.Purpose = trimmed
 			continue
 		}

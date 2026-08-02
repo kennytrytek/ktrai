@@ -156,8 +156,6 @@ Include only the sections required by the tier from Step 5. Remove the ` + "`←
 
 <repo-name> — <one sentence: what it does and which systems it touches>.
 
-Symbol index (all signatures): ` + "`.agent/context/symbols.md`" + `
-
 ## Structure
 | Path | Role |
 |---|---|
@@ -511,22 +509,4 @@ Write the full file using the ` + "`CiReviewSkill`" + ` template embedded in ktr
 - No rules already enforced by the linter or formatter (AGENTS.md commit pre-flight tells you what those are)
 - No rules already covered in AGENTS.md conventions
 - If a gap (2a–2d) yielded nothing actionable, add a comment stub noting what the team should fill in — do not fabricate content
-`
-
-// SymbolsPlaceholder is written when ctags is not available at init time.
-const SymbolsPlaceholder = `# Symbol Index
-
-_Not yet generated._
-
-Run the following to generate this file:
-
-` + "```" + `sh
-make gen
-` + "```" + `
-
-Requires [universal-ctags](https://github.com/universal-ctags/ctags) with JSON support:
-
-` + "```" + `sh
-brew install universal-ctags
-` + "```" + `
 `

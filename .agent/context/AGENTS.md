@@ -2,15 +2,13 @@
 
 ktrai — a CLI that scaffolds a `.agent/` directory layout in any repository, wiring AI agent context, rules, and skills for Cursor and Claude.
 
-Symbol index (all signatures): `.agent/context/symbols.md`
-
 AGENTS.md generation design (scaling strategy, project archetypes, section scaffolding tiers):
 `.agent/context/agents-md-design.md`
 
 ## Structure
 | Path | Role |
 |---|---|
-| `cmd/` | CLI subcommands: `align` (scaffold + migrate repos), `gen` (write symbol index from ctags JSON) |
+| `cmd/` | CLI subcommands: `align` (scaffold + migrate repos) |
 | `internal/agentsmd/` | Parse, draft, and render `.agent/context/AGENTS.md` |
 | `internal/scaffold/` | Idempotent filesystem primitives: dirs, symlinks, file migration, skills migration |
 | `internal/detect/` | Infer the primary programming language from root marker files |
@@ -55,9 +53,6 @@ Run in order before every commit:
 1. `go build ./...` — must compile cleanly
 2. `go vet ./...` — must pass with zero warnings
 3. `go test ./...` — must pass
-
-## Do not edit
-`.agent/context/symbols.md`
 
 ## Notes
 <!-- reserved for human annotation — agents must not modify this section -->
