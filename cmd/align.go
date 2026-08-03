@@ -223,8 +223,9 @@ func migrateExisting(root, contextDir, rulesDir, skillsDir string) error {
 	}
 
 	// Migrate skills from tool-specific locations into .agent/skills/.
-	// .claude/skills/ takes priority over .cursor/skills/. Duplicate skill
-	// names across sources cause an error.
+	// .claude/skills/ takes priority; .cursor/skills/ and .skills/ follow.
+	// .skills/ is checked for migration only — it is never re-created afterward.
+	// Duplicate skill names across sources cause an error.
 	type skillSource struct {
 		dir  string
 		name string // human-readable label for error messages
@@ -232,6 +233,7 @@ func migrateExisting(root, contextDir, rulesDir, skillsDir string) error {
 	sources := []skillSource{
 		{filepath.Join(root, ".claude", "skills"), ".claude/skills/"},
 		{filepath.Join(root, ".cursor", "skills"), ".cursor/skills/"},
+		{filepath.Join(root, ".skills"), ".skills/"},
 	}
 
 	// Track which skill names are already in .agent/skills/ and which source

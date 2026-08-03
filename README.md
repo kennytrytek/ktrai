@@ -18,7 +18,6 @@ your-repo/
 │
 ├── AGENTS.md                    → symlink → .agent/context/AGENTS.md
 ├── CLAUDE.md                    → symlink → .agent/context/AGENTS.md
-├── .skills                      → symlink → .agent/skills
 ├── .cursor/
 │   ├── rules                    → symlink → ../.agent/rules
 │   └── skills                   → symlink → ../.agent/skills
@@ -51,11 +50,11 @@ What `align` does:
 
 1. Creates `.agent/context/`, `.agent/rules/`, and `.agent/skills/` if absent.
 2. Migrates any real (non-symlink) `AGENTS.md`, `CLAUDE.md`, `.cursor/rules/`, and `.claude/rules/` into `.agent/`, replacing them with symlinks.
-3. Migrates skill subdirectories from `.skills/`, `.claude/skills/`, and `.cursor/skills/` into `.agent/skills/`, replacing each source with a symlink. Duplicate skill names across sources cause an error — rename or merge the conflicting skills and re-run.
+3. Migrates skill subdirectories from `.claude/skills/`, `.cursor/skills/`, and `.skills/` (if present) into `.agent/skills/`. Each migrated source directory is replaced with a symlink. Duplicate skill names across sources cause an error — rename or merge the conflicting skills and re-run.
 4. Removes configuration files for unsupported AI tools (e.g. `.github/copilot-instructions.md`).
 5. Creates a skeleton `AGENTS.md` under `.agent/context/` if none exists.
 6. Drops the `update-agents-md` rule into `.agent/rules/` if absent.
-7. Ensures `AGENTS.md`, `CLAUDE.md`, `.cursor/rules`, `.cursor/skills`, `.claude/rules`, `.claude/skills`, and `.skills` are symlinks pointing into `.agent/`.
+7. Ensures `AGENTS.md`, `CLAUDE.md`, `.cursor/rules`, `.cursor/skills`, `.claude/rules`, and `.claude/skills` are symlinks pointing into `.agent/`.
 
 After running `align`:
 - Open `.agent/context/AGENTS.md` and fill it in — the skeleton has TODOs for the project purpose, module descriptions, conventions, and commit pre-flight commands.

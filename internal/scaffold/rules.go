@@ -97,16 +97,38 @@ Read the existing AGENTS.md (if any) before deciding:
 
 ## Scenario B — Creating or rebuilding AGENTS.md
 
-**Step 1 — gather git history** across three time slices to identify hotspots:
+**Step 1 — gather git history** across three time slices to identify hotspots.
+Three filters applied to every command: ` + "`--merges`" + ` (one entry per completed unit of work), ` + "`n >= 3`" + ` (skip trivial 1–2 file changes), and subject pattern (skip version bumps).
 ` + "```" + `sh
 # Recent (last 12 months)
-git log --since="1 year ago" --name-only --pretty=format: | sort | uniq -c | sort -rn | head -20
+git log --merges --since="1 year ago" --name-only --pretty=format:"COMMIT:%s" | awk '
+/^COMMIT:/{
+  if (n >= 3 && !skip) for (i=1;i<=n;i++) print files[i]
+  subj = tolower(substr($0,8)); skip = (subj ~ /bump|release v[0-9]/); n=0; next
+}
+NF { files[++n]=$0 }
+END { if (n >= 3 && !skip) for (i=1;i<=n;i++) print files[i] }
+' | sort | uniq -c | sort -rn | head -20
 
 # Mid-range (1–3 years ago)
-git log --before="1 year ago" --since="3 years ago" --name-only --pretty=format: | sort | uniq -c | sort -rn | head -20
+git log --merges --before="1 year ago" --since="3 years ago" --name-only --pretty=format:"COMMIT:%s" | awk '
+/^COMMIT:/{
+  if (n >= 3 && !skip) for (i=1;i<=n;i++) print files[i]
+  subj = tolower(substr($0,8)); skip = (subj ~ /bump|release v[0-9]/); n=0; next
+}
+NF { files[++n]=$0 }
+END { if (n >= 3 && !skip) for (i=1;i<=n;i++) print files[i] }
+' | sort | uniq -c | sort -rn | head -20
 
 # Foundational (inception to 3 years ago)
-git log --before="3 years ago" --name-only --pretty=format: | sort | uniq -c | sort -rn | head -20
+git log --merges --before="3 years ago" --name-only --pretty=format:"COMMIT:%s" | awk '
+/^COMMIT:/{
+  if (n >= 3 && !skip) for (i=1;i<=n;i++) print files[i]
+  subj = tolower(substr($0,8)); skip = (subj ~ /bump|release v[0-9]/); n=0; next
+}
+NF { files[++n]=$0 }
+END { if (n >= 3 && !skip) for (i=1;i<=n;i++) print files[i] }
+' | sort | uniq -c | sort -rn | head -20
 ` + "```" + `
 
 Interpret results:

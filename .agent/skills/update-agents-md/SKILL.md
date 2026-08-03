@@ -33,26 +33,54 @@ Read the existing AGENTS.md (if any) before deciding:
 
 **1a — Hot spots** (frequently changed paths):
 ```sh
+# Three filters applied to every command below:
+#   --merges           → merge commits only (one entry per completed unit of work)
+#   n >= 3             → skip merges that touch fewer than 3 files (trivial one-liners)
+#   bump|release v[0-9] → skip version-bump merges (rarely signal architectural churn)
+
 # Recent (last 12 months)
-git log --since="1 year ago" --name-only --pretty=format: | sort | uniq -c | sort -rn | head -20
+git log --merges --since="1 year ago" --name-only --pretty=format:"COMMIT:%s" | awk '
+/^COMMIT:/{
+  if (n >= 3 && !skip) for (i=1;i<=n;i++) print files[i]
+  subj = tolower(substr($0,8)); skip = (subj ~ /bump|release v[0-9]/); n=0; next
+}
+NF { files[++n]=$0 }
+END { if (n >= 3 && !skip) for (i=1;i<=n;i++) print files[i] }
+' | sort | uniq -c | sort -rn | head -20
 
 # Mid-range (1–3 years ago)
-git log --before="1 year ago" --since="3 years ago" --name-only --pretty=format: | sort | uniq -c | sort -rn | head -20
+git log --merges --before="1 year ago" --since="3 years ago" --name-only --pretty=format:"COMMIT:%s" | awk '
+/^COMMIT:/{
+  if (n >= 3 && !skip) for (i=1;i<=n;i++) print files[i]
+  subj = tolower(substr($0,8)); skip = (subj ~ /bump|release v[0-9]/); n=0; next
+}
+NF { files[++n]=$0 }
+END { if (n >= 3 && !skip) for (i=1;i<=n;i++) print files[i] }
+' | sort | uniq -c | sort -rn | head -20
 
 # Foundational (inception to 3 years ago)
-git log --before="3 years ago" --name-only --pretty=format: | sort | uniq -c | sort -rn | head -20
+git log --merges --before="3 years ago" --name-only --pretty=format:"COMMIT:%s" | awk '
+/^COMMIT:/{
+  if (n >= 3 && !skip) for (i=1;i<=n;i++) print files[i]
+  subj = tolower(substr($0,8)); skip = (subj ~ /bump|release v[0-9]/); n=0; next
+}
+NF { files[++n]=$0 }
+END { if (n >= 3 && !skip) for (i=1;i<=n;i++) print files[i] }
+' | sort | uniq -c | sort -rn | head -20
 ```
 Files appearing frequently in recent history → active hotspots; read and describe these first.
 Files present since early commits and still present today → foundational.
 
 **1b — Coupling clusters** (files that change together):
 ```sh
-git log --name-only --pretty=format:"---" | awk '
-/^---$/{
-  if(n>1) for(i=1;i<=n;i++) for(j=i+1;j<=n;j++) print files[i]" "files[j];
-  n=0; next
+git log --merges --name-only --pretty=format:"COMMIT:%s" | awk '
+/^COMMIT:/{
+  subj = tolower(substr($0,8)); skip = (subj ~ /bump|release v[0-9]/)
+  if (n >= 3 && !was_skip) for(i=1;i<=n;i++) for(j=i+1;j<=n;j++) print files[i]" "files[j]
+  n=0; was_skip=skip; next
 }
-NF{ files[++n]=$0 }
+NF { files[++n]=$0 }
+END { if (n >= 3 && !was_skip) for(i=1;i<=n;i++) for(j=i+1;j<=n;j++) print files[i]" "files[j] }
 ' | sort | uniq -c | sort -rn | head -15
 ```
 Filter pairs where both files are source files (exclude lock files, generated files, `.agent/` meta-files). A pair with 2+ co-commits is meaningful on repos up to ~6 months old; use 3+ for older repos.
@@ -63,9 +91,13 @@ Filter pairs where both files are source files (exclude lock files, generated fi
 #   < 3 months old  → use --before="2 weeks ago" / --since="2 weeks ago"
 #   3–12 months old → use --before="3 months ago" / --since="3 months ago"
 #   > 12 months old → use --before="1 year ago"  / --since="1 year ago"
-comm -23 \
-  <(git log --before="<CUTOFF>" --name-only --pretty=format: | grep -v '^$' | sort -u) \
-  <(git log --since="<CUTOFF>"  --name-only --pretty=format: | grep -v '^$' | sort -u)
+
+# Compact filter inline (same three filters as 1a/1b)
+_qf() { git log --merges "$@" --name-only --pretty=format:"COMMIT:%s" | awk '
+  /^COMMIT:/{if(n>=3&&!s) for(i=1;i<=n;i++) print f[i]; subj=tolower(substr($0,8)); s=(subj~/bump|release v[0-9]/); n=0; next}
+  NF{f[++n]=$0} END{if(n>=3&&!s) for(i=1;i<=n;i++) print f[i]}
+' | grep -v "^$" | sort -u; }
+comm -23 <(_qf --before="<CUTOFF>") <(_qf --since="<CUTOFF>")
 ```
 Files in the output have a commit history but have not been touched recently. These are battle-tested; agents should change them with extra care. Omit this section if the repo is too young (no files qualify).
 
