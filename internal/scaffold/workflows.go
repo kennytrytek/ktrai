@@ -61,7 +61,20 @@ jobs:
        contains(github.event.comment.body, '/ai-review-requested') &&
        contains(fromJSON('["COLLABORATOR", "MEMBER", "OWNER"]'), github.event.comment.author_association))
     uses: Workiva/gha-ai-code-review/.github/workflows/ai-code-review.yml@0.1.80
-    secrets: inherit
+    # Explicit secrets forwarded to the reusable workflow.
+    # Canonical sources (review after any gha-ai-code-review release bump):
+    #   Prerequisites section  — https://github.com/Workiva/gha-ai-code-review#prerequisites
+    #   Inputs table rows      — slack-bot-token → BAYMAX_SLACK_BOT_TOKEN
+    #                            security-slack-channel-id → SUPPORT_INFOSEC_CHANNEL_ID
+    secrets:
+      ENG_OPS_JIRA_TOKEN: ${{ secrets.ENG_OPS_JIRA_TOKEN }}
+      AI_CODE_REVIEW_AWS_ACCESS_KEY: ${{ secrets.AI_CODE_REVIEW_AWS_ACCESS_KEY }}
+      AI_CODE_REVIEW_AWS_SECRET_KEY: ${{ secrets.AI_CODE_REVIEW_AWS_SECRET_KEY }}
+      AI_CODE_REVIEW_BEDROCK_MODEL_HAIKU: ${{ secrets.AI_CODE_REVIEW_BEDROCK_MODEL_HAIKU }}
+      AI_CODE_REVIEW_BEDROCK_MODEL_SONNET: ${{ secrets.AI_CODE_REVIEW_BEDROCK_MODEL_SONNET }}
+      AI_CODE_REVIEW_BEDROCK_MODEL_OPUS: ${{ secrets.AI_CODE_REVIEW_BEDROCK_MODEL_OPUS }}
+      BAYMAX_SLACK_BOT_TOKEN: ${{ secrets.BAYMAX_SLACK_BOT_TOKEN }}
+      SUPPORT_INFOSEC_CHANNEL_ID: ${{ secrets.SUPPORT_INFOSEC_CHANNEL_ID }}
     with:
       file-patterns: |
 ` + indentPatterns(filePatterns) + `
@@ -93,7 +106,20 @@ permissions:
 jobs:
   scheduled-review:
     uses: Workiva/gha-ai-code-review/.github/workflows/ai-code-review-scheduled.yml@0.1.80
-    secrets: inherit
+    # Explicit secrets forwarded to the reusable workflow.
+    # Canonical sources (review after any gha-ai-code-review release bump):
+    #   Prerequisites section  — https://github.com/Workiva/gha-ai-code-review#prerequisites
+    #   Inputs table rows      — slack-bot-token → BAYMAX_SLACK_BOT_TOKEN
+    #                            security-slack-channel-id → SUPPORT_INFOSEC_CHANNEL_ID
+    secrets:
+      ENG_OPS_JIRA_TOKEN: ${{ secrets.ENG_OPS_JIRA_TOKEN }}
+      AI_CODE_REVIEW_AWS_ACCESS_KEY: ${{ secrets.AI_CODE_REVIEW_AWS_ACCESS_KEY }}
+      AI_CODE_REVIEW_AWS_SECRET_KEY: ${{ secrets.AI_CODE_REVIEW_AWS_SECRET_KEY }}
+      AI_CODE_REVIEW_BEDROCK_MODEL_HAIKU: ${{ secrets.AI_CODE_REVIEW_BEDROCK_MODEL_HAIKU }}
+      AI_CODE_REVIEW_BEDROCK_MODEL_SONNET: ${{ secrets.AI_CODE_REVIEW_BEDROCK_MODEL_SONNET }}
+      AI_CODE_REVIEW_BEDROCK_MODEL_OPUS: ${{ secrets.AI_CODE_REVIEW_BEDROCK_MODEL_OPUS }}
+      BAYMAX_SLACK_BOT_TOKEN: ${{ secrets.BAYMAX_SLACK_BOT_TOKEN }}
+      SUPPORT_INFOSEC_CHANNEL_ID: ${{ secrets.SUPPORT_INFOSEC_CHANNEL_ID }}
     with:
       file-patterns: |
 ` + indentPatterns(filePatterns) + `
