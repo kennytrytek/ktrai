@@ -231,14 +231,18 @@ func MigrateSkillsDir(srcDir, agentSkillsDir string) ([]string, error) {
 	return migrated, nil
 }
 
-// CollapseSkillSymlinks removes individual per-skill symlinks from srcDir that
-// point into agentSkillsDir, then removes srcDir if it is now empty. This is
-// called after MigrateSkillsDir so that the whole srcDir can be replaced by a
-// single directory symlink via EnsureSymlink.
+// CollapseSkillSymlinks removes individual per-skill symlinks from srcDir and
+// removes srcDir itself so that EnsureSymlink can replace the whole directory
+// with a single directory-level symlink pointing to agentSkillsDir.
 //
-// If any entry in srcDir is a real file or directory, or a symlink pointing
-// outside agentSkillsDir, the function returns without removing anything —
-// the directory cannot be safely collapsed in that case.
+// A symlink entry is safe to remove when either:
+//   - it already points into agentSkillsDir (created by a previous MoveToAgent
+//     call), or
+//   - the skill name exists in agentSkillsDir (the skill was migrated there
+//     from another source, making this symlink stale).
+//
+// If any entry is a real file or directory, or a symlink whose skill is not
+// present in agentSkillsDir, the function returns without removing anything.
 func CollapseSkillSymlinks(srcDir, agentSkillsDir string) error {
 	info, err := os.Lstat(srcDir)
 	if err != nil {
@@ -261,11 +265,10 @@ func CollapseSkillSymlinks(srcDir, agentSkillsDir string) error {
 		return fmt.Errorf("reading %s: %w", srcDir, err)
 	}
 
-	// Verify every entry is a symlink pointing into agentSkillsDir before
-	// removing anything.
+	// Verify every entry can be safely removed before touching anything.
 	for _, e := range entries {
 		if e.Type()&os.ModeSymlink == 0 {
-			return nil // real entry present — cannot collapse safely
+			return nil // real file or directory present — cannot collapse safely
 		}
 		target, rerr := os.Readlink(filepath.Join(srcDir, e.Name()))
 		if rerr != nil {
@@ -279,12 +282,18 @@ func CollapseSkillSymlinks(srcDir, agentSkillsDir string) error {
 			return nil
 		}
 		rel, rerr := filepath.Rel(agentAbs, targetAbs)
-		if rerr != nil || (len(rel) >= 2 && rel[:2] == "..") {
-			return nil // points outside agentSkillsDir — do not collapse
+		alreadyInAgent := rerr == nil && rel != "" && (len(rel) < 2 || rel[:2] != "..")
+		if alreadyInAgent {
+			continue // symlink already points into agentSkillsDir — safe to remove
+		}
+		// Symlink points elsewhere. Safe to remove only if the skill has been
+		// migrated into agentSkillsDir (making this symlink stale).
+		if _, serr := os.Lstat(filepath.Join(agentSkillsDir, e.Name())); serr != nil {
+			return nil // skill not in agentSkillsDir — cannot collapse safely
 		}
 	}
 
-	// All entries are symlinks into agentSkillsDir — remove them.
+	// All entries are removable — remove symlinks then the directory.
 	for _, e := range entries {
 		if rerr := os.Remove(filepath.Join(srcDir, e.Name())); rerr != nil {
 			return fmt.Errorf("removing symlink %s: %w", filepath.Join(srcDir, e.Name()), rerr)
