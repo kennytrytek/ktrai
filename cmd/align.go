@@ -285,10 +285,11 @@ func migrateExisting(root, contextDir, rulesDir, skillsDir string) error {
 			fmt.Printf("  → moved skill %q from %s to .agent/skills/\n", name, src.name)
 		}
 
-		// If the source dir is now empty (all real entries migrated), remove it
-		// so EnsureSymlink can place the directory symlink there.
-		if isEmpty, err := isDirEmpty(src.dir); err == nil && isEmpty {
-			_ = os.Remove(src.dir)
+		// Remove any per-skill symlinks left behind by MigrateSkillsDir and
+		// then remove the now-empty directory so EnsureSymlink can replace the
+		// whole thing with a single directory symlink.
+		if err := scaffold.CollapseSkillSymlinks(src.dir, skillsDir); err != nil {
+			return fmt.Errorf("collapsing skill symlinks in %s: %w", src.name, err)
 		}
 	}
 
@@ -297,22 +298,6 @@ func migrateExisting(root, contextDir, rulesDir, skillsDir string) error {
 	}
 
 	return nil
-}
-
-// isDirEmpty reports whether dir exists, is a real directory, and has no entries.
-func isDirEmpty(dir string) (bool, error) {
-	info, err := os.Lstat(dir)
-	if err != nil {
-		return false, err
-	}
-	if info.Mode()&os.ModeSymlink != 0 || !info.IsDir() {
-		return false, nil
-	}
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return false, err
-	}
-	return len(entries) == 0, nil
 }
 
 // unsupportedConfigs lists paths (relative to the repo root) of configuration

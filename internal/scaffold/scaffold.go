@@ -63,7 +63,7 @@ func EnsureSymlink(link, target string) error {
 				return fmt.Errorf("removing stale symlink %s: %w", link, rerr)
 			}
 		} else {
-			return fmt.Errorf("%s exists as a regular file or directory; run 'ktrai init' to migrate it automatically", link)
+			return fmt.Errorf("%s exists as a regular file or directory; run 'ktrai align' to migrate it automatically", link)
 		}
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("lstat %s: %w", link, err)
@@ -229,6 +229,68 @@ func MigrateSkillsDir(srcDir, agentSkillsDir string) ([]string, error) {
 		migrated = append(migrated, e.Name())
 	}
 	return migrated, nil
+}
+
+// CollapseSkillSymlinks removes individual per-skill symlinks from srcDir that
+// point into agentSkillsDir, then removes srcDir if it is now empty. This is
+// called after MigrateSkillsDir so that the whole srcDir can be replaced by a
+// single directory symlink via EnsureSymlink.
+//
+// If any entry in srcDir is a real file or directory, or a symlink pointing
+// outside agentSkillsDir, the function returns without removing anything —
+// the directory cannot be safely collapsed in that case.
+func CollapseSkillSymlinks(srcDir, agentSkillsDir string) error {
+	info, err := os.Lstat(srcDir)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
+		return fmt.Errorf("lstat %s: %w", srcDir, err)
+	}
+	if info.Mode()&os.ModeSymlink != 0 || !info.IsDir() {
+		return nil // already a symlink or not a directory — nothing to do
+	}
+
+	agentAbs, err := filepath.Abs(agentSkillsDir)
+	if err != nil {
+		return err
+	}
+
+	entries, err := os.ReadDir(srcDir)
+	if err != nil {
+		return fmt.Errorf("reading %s: %w", srcDir, err)
+	}
+
+	// Verify every entry is a symlink pointing into agentSkillsDir before
+	// removing anything.
+	for _, e := range entries {
+		if e.Type()&os.ModeSymlink == 0 {
+			return nil // real entry present — cannot collapse safely
+		}
+		target, rerr := os.Readlink(filepath.Join(srcDir, e.Name()))
+		if rerr != nil {
+			return nil // unreadable symlink — leave as is
+		}
+		if !filepath.IsAbs(target) {
+			target = filepath.Join(srcDir, target)
+		}
+		targetAbs, aerr := filepath.Abs(target)
+		if aerr != nil {
+			return nil
+		}
+		rel, rerr := filepath.Rel(agentAbs, targetAbs)
+		if rerr != nil || (len(rel) >= 2 && rel[:2] == "..") {
+			return nil // points outside agentSkillsDir — do not collapse
+		}
+	}
+
+	// All entries are symlinks into agentSkillsDir — remove them.
+	for _, e := range entries {
+		if rerr := os.Remove(filepath.Join(srcDir, e.Name())); rerr != nil {
+			return fmt.Errorf("removing symlink %s: %w", filepath.Join(srcDir, e.Name()), rerr)
+		}
+	}
+	return os.Remove(srcDir)
 }
 
 // copyDir recursively copies src directory to dst.

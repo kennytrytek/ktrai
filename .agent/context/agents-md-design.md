@@ -69,7 +69,7 @@ Research was performed across these repos (in `~/git/`):
 ```markdown
 | Path | Role |
 |---|---|
-| `cmd/` | CLI subcommands (init, align, gen-symbols) |
+| `cmd/` | CLI subcommands (align, gen-symbols) |
 | `internal/agentsmd/` | Parse and render AGENTS.md |
 | `internal/scaffold/` | Idempotent filesystem scaffolding |
 | `internal/detect/` | Language and project type detection |
